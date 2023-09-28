@@ -153,6 +153,7 @@ export default class slide {
     this.transition(true);
     this.addSlideEvents();
     this.slidesConfig();
+    console.log("correcao de push");
     this.addResizeEvent();
     return this;
   }
