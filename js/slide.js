@@ -1,15 +1,16 @@
 import debounce from "./debounce.js";
 
 export class slide {
-  constructor(slide, wraper) {
+  constructor(slide, wrapper) {
     this.slide = document.querySelector(slide);
-    this.wraper = document.querySelector(wraper);
+    this.wrapper = document.querySelector(wrapper);
     this.dist = {
       finalPosition: 0,
       startX: 0,
       movement: 0,
     };
     this.activeClass = "active";
+    this.changeEvent = new Event("changeEvent");
   }
 
   transition(active) {
@@ -36,7 +37,7 @@ export class slide {
       this.dist.startX = event.changedTouches[0].clientX;
       movetype = "touchmove";
     }
-    this.wraper.addEventListener(movetype, this.onMove);
+    this.wrapper.addEventListener(movetype, this.onMove);
     this.transition(false);
   }
 
@@ -51,7 +52,7 @@ export class slide {
 
   onEnd(event) {
     const moveType = event.type === "mouseup" ? "mousemove" : "touchmove";
-    this.wraper.removeEventListener(moveType, this.onMove);
+    this.wrapper.removeEventListener(moveType, this.onMove);
     this.dist.finalPosition = this.dist.movePosition;
     this.transition(true);
     this.changeSlideOnEnd();
@@ -68,16 +69,16 @@ export class slide {
   }
 
   addSlideEvents() {
-    this.wraper.addEventListener("mousedown", this.onStart);
-    this.wraper.addEventListener("touchstart", this.onStart);
-    this.wraper.addEventListener("mouseup", this.onEnd);
-    this.wraper.addEventListener("touchend", this.onEnd);
+    this.wrapper.addEventListener("mousedown", this.onStart);
+    this.wrapper.addEventListener("touchstart", this.onStart);
+    this.wrapper.addEventListener("mouseup", this.onEnd);
+    this.wrapper.addEventListener("touchend", this.onEnd);
   }
 
   // slide configs
 
   slidePosition(slide) {
-    const margin = (this.wraper.offsetWidth - slide.offsetWidth) / 2;
+    const margin = (this.wrapper.offsetWidth - slide.offsetWidth) / 2;
     return -(slide.offsetLeft - margin);
   }
 
@@ -106,6 +107,7 @@ export class slide {
     this.slideIndexNav(index);
     this.dist.finalPosition = activesSlide.position;
     this.changeActiveClass();
+    this.wrapper.dispatchEvent(this.changeEvent);
   }
 
   // Ative class
@@ -161,6 +163,10 @@ export class slide {
 }
 
 export class SlideNav extends slide {
+  constructor(silde, wrapper) {
+    super(silde, wrapper);
+    this.bindControlEvents();
+  }
   // Cria interacao de botoes de nevegacao
   addArrow(prev, next) {
     this.prevElement = document.querySelector(prev);
@@ -172,5 +178,47 @@ export class SlideNav extends slide {
   addArrowEvent() {
     this.prevElement.addEventListener("click", this.activePrevSlide);
     this.nextElement.addEventListener("click", this.activeNextSlide);
+  }
+
+  createControl() {
+    const control = document.createElement("ul");
+    control.dataset.control = "slide";
+
+    this.slideArray.forEach((item, index) => {
+      control.innerHTML += `<li><a hfref='#slide${index + 1}'>${
+        index + 1
+      }</a></li>`;
+    });
+    this.wrapper.appendChild(control);
+    return control;
+  }
+
+  eventControl(item, index) {
+    item.addEventListener("click", (event) => {
+      event.preventDefault();
+      this.changeSlide(index);
+    });
+    this.wrapper.addEventListener("changeEvent", this.activeControlItem);
+  }
+
+  activeControlItem() {
+    this.controlArray.forEach((item) =>
+      item.classList.remove(this.activeClass)
+    );
+    this.controlArray[this.index.active].classList.add(this.activeClass);
+  }
+
+  addControl(customControl) {
+    this.control =
+      document.querySelector(customControl) || this.createControl();
+    this.controlArray = [...this.control.children];
+
+    this.activeControlItem();
+    this.controlArray.forEach(this.eventControl);
+  }
+
+  bindControlEvents() {
+    this.eventControl = this.eventControl.bind(this);
+    this.activeControlItem = this.activeControlItem.bind(this);
   }
 }
